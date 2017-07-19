@@ -15,6 +15,9 @@ ser = serial.Serial(
 
 ser.isOpen()
 
+def uart_send(input):
+    ser.write(input + "\x00")
+
 def listen_com(conn):
     input = 1
     while 1:

@@ -43,6 +43,25 @@ class Hldi:
         print "destroy signal occurred"
         gtk.main_quit()
 
+    def enter_callback(self, widget, entry):
+        input = entry.get_text()
+        com.uart_send(input)
+        self.entry_text = input
+
+        self.line_num += 1
+        self.textbuffer.insert(self.textbuffer.get_end_iter(), '%d: < %s\r\n' % (self.line_num, input))
+
+        self.textview.scroll_to_mark(self.textbuffer.get_insert(), 0);
+
+    def click_callback(self, widget, data=None):
+        input = self.entry.get_text()
+        com.uart_send(input)
+
+        self.line_num += 1
+        self.textbuffer.insert(self.textbuffer.get_end_iter(), '%d: < %s\r\n' % (self.line_num, input))
+
+        self.textview.scroll_to_mark(self.textbuffer.get_insert(), 0);
+
     def __init__(self):
         # create a new window
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -83,13 +102,28 @@ class Hldi:
         self.textview.show()
         self.box2.pack_start(self.sw)
         # Creates a new button with the label "Hello World".
-        self.button = gtk.Button("Hello World")
-    
+        self.button = gtk.Button('send')
+
+        self.box3 = gtk.VBox(False, 10)
+        self.box3.set_border_width(10)
+        self.box.pack_start(self.box3, True, True, 0)
+        self.box3.show()
+
+        self.entry = gtk.Entry()
+        self.entry.set_max_length(50)
+        self.entry.connect("activate", self.enter_callback, self.entry)
+        self.entry.set_text("hello")
+        self.entry.insert_text(" world", len(self.entry.get_text()))
+        self.entry.select_region(0, len(self.entry.get_text()))
+        self.box.pack_start(self.entry, True, True, 0)
+        self.entry.show()
+
         # When the button receives the "clicked" signal, it will call the
         # function hello() passing it None as its argument.  The hello()
         # function is defined above.
-        self.button.connect("clicked", self.hello, None)
-    
+        self.button.connect('clicked', self.click_callback, None)
+        self.box.pack_end(self.button, True, True, 0)
+
         # This will cause the window to be destroyed by calling
         # gtk_widget_destroy(window) when "clicked".  Again, the destroy
         # signal could come from here, or the window manager.
