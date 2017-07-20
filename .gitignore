@@ -2,3 +2,4 @@ hardware
 *.swp
 *.swn
 .idea
+*.pyc
