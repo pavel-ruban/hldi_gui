@@ -1,14 +1,104 @@
 import pygtk;
 pygtk.require('2.0')
 import gtk, gtk.gdk as gdk, gtk.gtkgl as gtkgl, gtk.gdkgl as gdkgl
-from OpenGL.GL import *
 from gtk import glade
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 import math
 from numpy import matrix
 
+from OpenGLContext import testingcontext
+BaseContext = testingcontext.getInteractive()
+from OpenGL.GL import *
+from OpenGL.arrays import vbo
+from OpenGLContext.arrays import *
+from OpenGL.GL import shaders
+
+class TestContext( BaseContext ):
+    """Creates a simple vertex shader..."""
+
+    def OnInit(self):
+        VERTEX_SHADER = shaders.compileShader("""#version 120
+        void main() {
+            gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+        }""", GL_VERTEX_SHADER)
+
+        FRAGMENT_SHADER = shaders.compileShader("""#version 120
+        void main() {
+            gl_FragColor = vec4( 0, 1, 0, 1 );
+        }""", GL_FRAGMENT_SHADER)
+
+        self.shader = shaders.compileProgram(VERTEX_SHADER, FRAGMENT_SHADER)
+
+        self.vbo = vbo.VBO(
+            array([
+                [0, 1, 0],
+                [-1, -1, 0],
+                [1, -1, 0],
+                [2, -1, 0],
+                [4, -1, 0],
+                [4, 1, 0],
+                [2, -1, 0],
+                [4, 1, 0],
+                [2, 1, 0],
+            ], 'f')
+        )
+
+    def Render(self, mode):
+        """Render the geometry for the scene."""
+        shaders.glUseProgram(self.shader)
+        try:
+            self.vbo.bind()
+            try:
+                glEnableClientState(GL_VERTEX_ARRAY);
+                glVertexPointerf(self.vbo)
+                glDrawArrays(GL_TRIANGLES, 0, 9)
+            finally:
+                self.vbo.unbind()
+                glDisableClientState(GL_VERTEX_ARRAY);
+
+        finally:
+            shaders.glUseProgram( 0 )
+
+def display(x, y):
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+    glPushMatrix()
+    color = [1.0,0.,0.,1.]
+    glMaterialfv(GL_FRONT,GL_DIFFUSE,color)
+    # glutSolidSphere(2,20,20)
+    glPopMatrix()
+    # glutSwapBuffers()
+    return
+
 def hldiGlInit(self):
+    # glutInit(sys.argv)
+    # glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
+    # glutInitWindowSize(400, 400)
+    # glutCreateWindow('xxx')
+    #
+    # glClearColor(0., 0., 0., 1.)
+    # glShadeModel(GL_SMOOTH)
+    # glEnable(GL_CULL_FACE)
+    # glEnable(GL_DEPTH_TEST)
+    # glEnable(GL_LIGHTING)
+    # lightZeroPosition = [10., 4., 10., 1.]
+    # lightZeroColor = [0.8, 1.0, 0.8, 1.0]  # green tinged
+    # glLightfv(GL_LIGHT0, GL_POSITION, lightZeroPosition)
+    # glLightfv(GL_LIGHT0, GL_DIFFUSE, lightZeroColor)
+    # glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.1)
+    # glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.05)
+    # glEnable(GL_LIGHT0)
+    # glutDisplayFunc(display)
+    # glMatrixMode(GL_PROJECTION)
+    # gluPerspective(40., 1., 1., 40.)
+    # glMatrixMode(GL_MODELVIEW)
+    # gluLookAt(0, 0, 10,
+    #           0, 0, 0,
+    #           0, 1, 0)
+    # glPushMatrix()
+    # glutMainLoop()
+
+    # TestContext.ContextMainLoop()
     import sys
 
     glutInit(sys.argv)
@@ -22,15 +112,115 @@ def hldiGlInit(self):
     vbox = gtk.VBox(False, 0)
 
     window.add(vbox)
-    
-    zpr = HldiGL()
-    zpr.draw = _demo_draw
+
+    # zpr = HldiGL()
+    # zpr.draw = _demo_draw
+
+    config = gdkgl.Config (
+        mode = (
+            gdkgl.MODE_RGBA |
+            gdkgl.MODE_DOUBLE |
+            gdkgl.MODE_DEPTH))
+
+    area = gtkgl.DrawingArea (config)
+    area.set_size_request(
+        width=200,
+        height=200)
+
+    glClearColor(0., 0., 0., 1.)
+    glShadeModel(GL_SMOOTH)
+    glEnable(GL_CULL_FACE)
+    glEnable(GL_DEPTH_TEST)
+    glEnable(GL_LIGHTING)
+    lightZeroPosition = [10., 4., 10., 1.]
+    lightZeroColor = [0.8, 1.0, 0.8, 1.0]  # green tinged
+    glLightfv(GL_LIGHT0, GL_POSITION, lightZeroPosition)
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightZeroColor)
+    glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.1)
+    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.05)
+    glEnable(GL_LIGHT0)
+    glMatrixMode(GL_PROJECTION)
+    gluPerspective(40., 1., 1., 40.)
+    glMatrixMode(GL_MODELVIEW)
+    gluLookAt(0, 0, 10,
+              0, 0, 0,
+              0, 1, 0)
+    glPushMatrix()
+    area.connect('expose-event', on_draw)
 
     # viewport = self.glade.get_object('glvbox')
-    vbox.pack_start(zpr, True, True)
+    vbox.pack_start(area, True, True)
+    area.show()
+
     window.show_all()
+
     gtk.main()
     # self.glade.get_object("MainWindow").show_all()
+
+def on_draw (area, _):
+
+    """ Handles an `expose-event` event. Draws in the test OpenGL drawing
+        area.
+    """
+
+    drawable = area.get_gl_drawable ()
+    context = area.get_gl_context ()
+
+    if not drawable.gl_begin (context):
+        return
+
+    allocation = area.get_allocation ()
+    viewport_width = float (allocation.width)
+    viewport_height = float (allocation.height)
+
+    # gluPerspective does not accept named parameters.
+    # Use variable instead, for readability.
+    # Z negative forward oriented.
+
+    aspect =  viewport_width / viewport_height
+    fovy   =  35.0 # The one which looks to most natural.
+    z_near =   2.0 # Enough for a moderately sized sample model.
+    z_far  =  -2.0 # Idem.
+
+    # glTranslate does not accept named parameters.
+    # Use variable instead, for readability.
+    # Z positive forward oriented.
+
+    projection_dx =  0.0
+    projection_dy =  0.0
+    projection_dz = -3.0
+
+    # Reset picture.
+    glViewport (0, 0, int (viewport_width), int (viewport_height))
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+    # Model defined in default coordinates.
+    glMatrixMode (GL_MODELVIEW)
+    glLoadIdentity ()
+
+    # Projection using perspective and a few units backward.
+    glMatrixMode (GL_PROJECTION)
+    glLoadIdentity ()
+    gluPerspective (fovy, aspect, z_near, z_far)
+    glTranslate (projection_dx, projection_dy, projection_dz)
+    # Use the line below instead of the two above, for non perspective view.
+    # glOrtho (-aspect, +aspect, -1.0, +1.0, zNear, zFar)
+
+    # Draw a 1x1 square center on origin and on the x*y plan.
+    # x*y*z, Z negative forward oriented.
+    glBegin (GL_QUADS)
+    glVertex ( 0.5, -0.5, 0.0)
+    glVertex ( 0.5,  0.5, 0.0)
+    glVertex (-0.5,  0.5, 0.0)
+    glVertex (-0.5, -0.5, 0.0)
+    glEnd ()
+
+    drawable.swap_buffers ()
+
+    drawable.gl_end ()
+
+    return True
+
 
 def _demo_draw(event):
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
