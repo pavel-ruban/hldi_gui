@@ -349,7 +349,11 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="scrollable">True</property>
+                    <property name="tab_border">10</property>
+                    <property name="tab_hborder">30</property>
+                    <property name="tab_vborder">10</property>
                     <property name="group_id">1</property>
+                    <property name="group_name">control</property>
                     <property name="homogeneous">True</property>
                     <child>
                       <object class="GtkViewport" id="viewport2">
@@ -435,34 +439,58 @@
                         <property name="can_default">True</property>
                         <property name="has_default">True</property>
                         <property name="label" translatable="yes">Uart</property>
-                        <property name="selectable">True</property>
                       </object>
                       <packing>
-                        <property name="tab_expand">True</property>
                         <property name="tab_fill">False</property>
                         <property name="reorderable">True</property>
+                        <property name="detachable">True</property>
                       </packing>
                     </child>
                     <child>
-                      <placeholder/>
+                      <object class="GtkViewport" id="viewport1">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <object class="GtkVBox" id="glvbox">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <child>
+                              <placeholder/>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="position">1</property>
+                        <property name="tab_expand">True</property>
+                      </packing>
                     </child>
                     <child type="tab">
                       <object class="GtkLabel" id="Control">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="xalign">0.49000000953674316</property>
+                        <property name="xpad">3</property>
                         <property name="label" translatable="yes">Control</property>
-                        <property name="selectable">True</property>
                       </object>
                       <packing>
                         <property name="position">1</property>
-                        <property name="tab_expand">True</property>
                         <property name="tab_fill">False</property>
                         <property name="reorderable">True</property>
+                        <property name="detachable">True</property>
                       </packing>
                     </child>
                     <child>
-                      <placeholder/>
+                      <object class="GtkViewport" id="viewport4">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="position">2</property>
+                      </packing>
                     </child>
                     <child type="tab">
                       <object class="GtkLabel" id="PID">
@@ -470,13 +498,13 @@
                         <property name="can_focus">False</property>
                         <property name="xpad">2</property>
                         <property name="label" translatable="yes">PID</property>
-                        <property name="selectable">True</property>
                       </object>
                       <packing>
+                        <property name="menu_label">control</property>
                         <property name="position">2</property>
-                        <property name="tab_expand">True</property>
                         <property name="tab_fill">False</property>
                         <property name="reorderable">True</property>
+                        <property name="detachable">True</property>
                       </packing>
                     </child>
                   </object>

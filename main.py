@@ -18,6 +18,7 @@ import gobject
 
 from hldi.communication.uart import Uart
 from hldi.profile import Profile
+from hldi import graphic
 
 import glib
 
@@ -196,15 +197,21 @@ def application_thread():
     global hldi
 
     hldi = Hldi()
+    graphic.hldiGlInit(hldi)
     hldi.main()
 
 def communication_thread(conn, queue):
     if hldi.com.isOpen():
         hldi.com.listen(conn, queue)
 
+def gl_thread(queue):
+    pass
+
 # If the program is run directly or passed as an argument to the python
 # interpreter then create a HelloWorld instance and show it
 if __name__ == "__main__":
-    queue = Queue()
+    graphic.hldiGlInit(hldi)
 
-    application_thread()
+    # queue = Queue()
+
+    # application_thread()
