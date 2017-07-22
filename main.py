@@ -210,8 +210,8 @@ def gl_thread(queue):
 # If the program is run directly or passed as an argument to the python
 # interpreter then create a HelloWorld instance and show it
 if __name__ == "__main__":
-    graphic.hldiGlInit(hldi)
+    # graphic.hldiGlInit(hldi)
 
-    # queue = Queue()
+    queue = Queue()
 
-    # application_thread()
+    application_thread()

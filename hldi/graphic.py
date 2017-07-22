@@ -13,6 +13,8 @@ from OpenGL.GL import *
 from OpenGL.arrays import vbo
 from OpenGLContext.arrays import *
 from OpenGL.GL import shaders
+import numpy as np
+import gobject
 
 class TestContext( BaseContext ):
     """Creates a simple vertex shader..."""
@@ -60,15 +62,10 @@ class TestContext( BaseContext ):
         finally:
             shaders.glUseProgram( 0 )
 
-def display(x, y):
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
-    glPushMatrix()
-    color = [1.0,0.,0.,1.]
-    glMaterialfv(GL_FRONT,GL_DIFFUSE,color)
-    # glutSolidSphere(2,20,20)
-    glPopMatrix()
-    # glutSwapBuffers()
-    return
+
+
+import time, threading
+
 
 def hldiGlInit(self):
     # glutInit(sys.argv)
@@ -101,17 +98,14 @@ def hldiGlInit(self):
     # TestContext.ContextMainLoop()
     import sys
 
-    glutInit(sys.argv)
-    gdk.threads_init()
+    # window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+    # window.set_title("Zoom Pan Rotate")
+    # window.set_size_request(640, 480)
+    # window.connect("destroy", lambda event: gtk.main_quit())
 
-    window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-    window.set_title("Zoom Pan Rotate")
-    window.set_size_request(640, 480)
-    window.connect("destroy", lambda event: gtk.main_quit())
+    # vbox = gtk.VBox(False, 0)
 
-    vbox = gtk.VBox(False, 0)
-
-    window.add(vbox)
+    # window.add(vbox)
 
     # zpr = HldiGL()
     # zpr.draw = _demo_draw
@@ -123,40 +117,53 @@ def hldiGlInit(self):
             gdkgl.MODE_DEPTH))
 
     area = gtkgl.DrawingArea (config)
-    area.set_size_request(
-        width=200,
-        height=200)
+    # area.set_size_request(
+    #     width=200,
+    #     height=200)
 
-    glClearColor(0., 0., 0., 1.)
-    glShadeModel(GL_SMOOTH)
-    glEnable(GL_CULL_FACE)
-    glEnable(GL_DEPTH_TEST)
-    glEnable(GL_LIGHTING)
-    lightZeroPosition = [10., 4., 10., 1.]
-    lightZeroColor = [0.8, 1.0, 0.8, 1.0]  # green tinged
-    glLightfv(GL_LIGHT0, GL_POSITION, lightZeroPosition)
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightZeroColor)
-    glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.1)
-    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.05)
-    glEnable(GL_LIGHT0)
-    glMatrixMode(GL_PROJECTION)
-    gluPerspective(40., 1., 1., 40.)
-    glMatrixMode(GL_MODELVIEW)
-    gluLookAt(0, 0, 10,
-              0, 0, 0,
-              0, 1, 0)
-    glPushMatrix()
+    # glClearColor(1., 0., 0., 1.)
+    # glShadeModel(GL_SMOOTH)
+    # glEnable(GL_CULL_FACE)
+    # glEnable(GL_DEPTH_TEST)
+    # glEnable(GL_LIGHTING)
+    # lightZeroPosition = [10., 4., 10., 1.]
+    # lightZeroColor = [0.8, 1.0, 0.8, 1.0]  # green tinged
+    # glLightfv(GL_LIGHT0, GL_POSITION, lightZeroPosition)
+    # glLightfv(GL_LIGHT0, GL_DIFFUSE, lightZeroColor)
+    # glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.1)
+    # glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.05)
+    # glEnable(GL_LIGHT0)
+    # glMatrixMode(GL_PROJECTION)
+    # gluPerspective(40., 1., 1., 40.)
+    # glMatrixMode(GL_MODELVIEW)
+    # gluLookAt(0, 0, 10,
+    #           0, 0, 0,
+    #           0, 1, 0)
+    # glPushMatrix()
     area.connect('expose-event', on_draw)
 
-    # viewport = self.glade.get_object('glvbox')
+    vbox = self.glade.get_object('glvbox')
     vbox.pack_start(area, True, True)
     area.show()
 
-    window.show_all()
+    def foo():
+        # print(time.ctime())
+        # on_draw(area, self)
+        # threading.Timer(1, foo).start()
+        # source_id = gobject.timeout_add(1000, foo)
+        area.queue_draw()
+        return True
 
-    gtk.main()
+    foo()
+
+    source_id = gobject.timeout_add(1, foo)
+
+
+    # window.show_all()
+
+    # gtk.main()
     # self.glade.get_object("MainWindow").show_all()
-
+degree = 360
 def on_draw (area, _):
 
     """ Handles an `expose-event` event. Draws in the test OpenGL drawing
@@ -166,10 +173,10 @@ def on_draw (area, _):
     drawable = area.get_gl_drawable ()
     context = area.get_gl_context ()
 
-    if not drawable.gl_begin (context):
+    if not drawable.gl_begin(context):
         return
 
-    allocation = area.get_allocation ()
+    allocation = area.get_allocation()
     viewport_width = float (allocation.width)
     viewport_height = float (allocation.height)
 
@@ -192,35 +199,74 @@ def on_draw (area, _):
 
     # Reset picture.
     glViewport (0, 0, int (viewport_width), int (viewport_height))
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    glClearColor(1., 1., 1., 1)
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     # Model defined in default coordinates.
-    glMatrixMode (GL_MODELVIEW)
-    glLoadIdentity ()
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
 
     # Projection using perspective and a few units backward.
-    glMatrixMode (GL_PROJECTION)
-    glLoadIdentity ()
-    gluPerspective (fovy, aspect, z_near, z_far)
-    glTranslate (projection_dx, projection_dy, projection_dz)
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    gluPerspective(fovy, aspect, z_near, z_far)
+    glTranslate(projection_dx, projection_dy, projection_dz)
+
     # Use the line below instead of the two above, for non perspective view.
     # glOrtho (-aspect, +aspect, -1.0, +1.0, zNear, zFar)
+    glColor3f(0.3, 0.3, 0.3)
 
+    glPointSize(10.0)
+
+    pi_degree = 2 * np.pi / 360
+    global degree
+
+    degree = degree + 1
+    np.sin(degree * pi_degree)
+
+    # print 'degress: %d' % degree
+
+    if degree > 360:
+        degree = -360
+
+    x = degree / 360.
+
+    # glEnable(GL_POINT_SPRITE)
+
+
+    glEnable(GL_POINT_SMOOTH)
+    # glEnable(GL_BLEND)
+    # glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+    glPointSize(8.0)
+
+    # glActiveTexture(GL_TEXTURE0);
+    # glEnable(GL_TEXTURE_2D);
+    # glTexEnv(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+    # glTexEnv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+    # glBindTexture(GL_TEXTURE_2D, texture_name);
+
+    # print x
+    # glVertex(1.0, 1.0, 0.0)
     # Draw a 1x1 square center on origin and on the x*y plan.
     # x*y*z, Z negative forward oriented.
-    glBegin (GL_QUADS)
-    glVertex ( 0.5, -0.5, 0.0)
-    glVertex ( 0.5,  0.5, 0.0)
-    glVertex (-0.5,  0.5, 0.0)
-    glVertex (-0.5, -0.5, 0.0)
-    glEnd ()
+    glBegin(GL_POINTS)
+    for i in range(-360, 360, 1):
+        xx = i / 360.
+        y = np.sin((degree + i) * pi_degree)
+        glColor3f(0., 0., 0.)
+
+        glVertex(xx * 1.3, y / 2, 0.0)
+        glColor3f(0., 1., 0.)
+        glVertex(xx * 2, y / 2, 0.0)
+        glColor3f(1., 1., 0.)
+        glVertex(xx * 2.8, y / 2, 0.0)
+    glEnd()
 
     drawable.swap_buffers ()
 
-    drawable.gl_end ()
+    drawable.gl_end()
 
     return True
-
 
 def _demo_draw(event):
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -250,9 +296,10 @@ def _demo_draw(event):
     glPopName()
     glPopMatrix()
 
+
 class HldiGL(gtkgl.DrawingArea):
 
-    def __init__(self, w=640, h=480):
+    def __init__(self, w=200, h=150):
         try:
             glconfig = gdkgl.Config(mode=(gdkgl.MODE_RGB | gdkgl.MODE_DOUBLE | gdkgl.MODE_DEPTH))
         except gtk.gdkgl.NoMatches:
