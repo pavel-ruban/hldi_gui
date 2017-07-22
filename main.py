@@ -81,7 +81,6 @@ class Hldi:
         textview.scroll_to_mark(textbuffer.get_insert(), 0);
 
     def communication_send_click_callback(self, widget, data = None):
-        # input = self.entry.get_text()
         input = self.glade.get_object("communication_cmd_entry").get_text()
         self.com.send(input)
 
@@ -93,6 +92,35 @@ class Hldi:
         textbuffer.insert(textbuffer.get_end_iter(), '%d: < %s\r\n' % (self.line_num, input))
 
         textview.scroll_to_mark(textbuffer.get_insert(), 0)
+
+    def frame_expander_eventbox_click_callback(self, widget, data = None, prefix = ''):
+        frame_state = '%s_frame_state' % prefix
+        origin_viewport_height = '%s_origin_viewport_height' % prefix
+
+        if not hasattr(self, frame_state):
+            setattr(self, frame_state, True)
+
+        alignment = self.glade.get_object('%s_alignment' % prefix)
+        frame = self.glade.get_object('%s_frame' % prefix)
+        viewport = self.glade.get_object('%s_viewport' % prefix)
+
+        if not hasattr(self, origin_viewport_height):
+            setattr(self, origin_viewport_height, viewport.get_allocation().height)
+
+        icon = self.glade.get_object('%s_icon' % prefix)
+
+        if getattr(self, frame_state):
+            alignment.hide()
+            viewport.set_size_request(-1, 40)
+            frame.set_shadow_type(gtk.SHADOW_NONE)
+            icon.set_from_stock(gtk.STOCK_GO_DOWN, gtk.ICON_SIZE_BUTTON)
+        else:
+            viewport.set_size_request(-1, getattr(self, origin_viewport_height))
+            alignment.show()
+            frame.set_shadow_type(gtk.SHADOW_ETCHED_OUT)
+            icon.set_from_stock(gtk.STOCK_GO_UP, gtk.ICON_SIZE_BUTTON)
+
+        setattr(self, frame_state, getattr(self, frame_state) ^ 1)
 
     def gui_init(self):
         # Set the Glade file
@@ -124,6 +152,8 @@ class Hldi:
         # function hello() passing it None as its argument.  The hello()
         # function is defined above.
         self.glade.get_object('communication_send_button').connect('clicked', self.communication_send_click_callback, None)
+        self.glade.get_object('connection_eventbox').connect('button-press-event', self.frame_expander_eventbox_click_callback, 'connection')
+        self.glade.get_object('movectrl_eventbox').connect('button-press-event', self.frame_expander_eventbox_click_callback, 'movectrl')
         self.glade.get_object('communication_cmd_entry').connect('activate', self.communication_cmd_enter_callback, None)
         self.glade.get_object('serial_connect_button').connect('clicked', self.communication_connect_click_callback, None)
 
