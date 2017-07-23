@@ -1337,7 +1337,7 @@
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkButton" id="button2">
+                                      <object class="GtkButton" id="set_accel_btn">
                                         <property name="label" translatable="yes">Set Acceleation</property>
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
@@ -1375,7 +1375,7 @@
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkToggleButton" id="directrion_btn">
+                                      <object class="GtkToggleButton" id="motor_dir_btn">
                                         <property name="label" translatable="yes">CW</property>
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
@@ -1389,7 +1389,7 @@
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkToggleButton" id="Monor On">
+                                      <object class="GtkToggleButton" id="motor_on_btn">
                                         <property name="label" translatable="yes">Motor ON</property>
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
@@ -1401,7 +1401,7 @@
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkHScale" id="speed_scale">
+                                      <object class="GtkHScale" id="acceleation_scale">
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="restrict_to_fill_level">False</property>
@@ -1419,7 +1419,7 @@
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkHScale" id="speed_scale1">
+                                      <object class="GtkHScale" id="speed_scale">
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="restrict_to_fill_level">False</property>
@@ -1547,7 +1547,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkStatusbar" id="statusbar1">
+          <object class="GtkStatusbar" id="statusbar">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="spacing">2</property>

@@ -159,21 +159,24 @@ def on_draw (area, _):
     glEnable(GL_POINT_SMOOTH)
     glPointSize(8.0)
 
-    glBegin(GL_POINTS)
-    for i in range(-360, 360, 1):
-        xx = i / 360.
-        y = np.sin((degree + i) * pi_degree)
-        glColor3f(0., 0., 0.)
+    try:
+        glBegin(GL_POINTS)
+        for i in range(-360, 360, 1):
+            xx = i / 360.
+            y = np.sin((degree + i) * pi_degree)
+            glColor3f(0., 0., 0.)
 
-        glVertex(xx * 1.3, y / 2, 0.0)
-        glColor3f(0., 1., 0.)
-        glVertex(xx * 2, y / 2, 0.0)
-        glColor3f(1., 1., 0.)
-        glVertex(xx * 2.8, y / 2, 0.0)
-    glEnd()
+            glVertex(xx * 1.3, y / 2, 0.0)
+            glColor3f(0., 1., 0.)
+            glVertex(xx * 2, y / 2, 0.0)
+            glColor3f(1., 1., 0.)
+            glVertex(xx * 2.8, y / 2, 0.0)
+        glEnd()
 
-    drawable.swap_buffers ()
+        drawable.swap_buffers ()
 
-    drawable.gl_end()
+        drawable.gl_end()
+    except:
+        pass
 
     return True

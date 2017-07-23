@@ -21,6 +21,8 @@ from hldi.profile import Profile
 from hldi import graphic
 hldi = None
 
+from hldi import commands as cmd
+
 class Hldi:
     cmd_history = []
     cmd_entry_substring = ''
@@ -153,10 +155,29 @@ class Hldi:
 
         return True
 
-    def comm_cmd_send(self, widget, entry):
+    def comm_send(self, input):
+        self.com.send(input)
+
+        # Update status bar message.
+        statusbar = self.glade.get_object('statusbar')
+        context_id = statusbar.get_context_id('last_event')
+        statusbar.push(context_id, 'uart: "%s" have been sent' % input)
+
+    def comm_cmd_send(self, input):
+        self.comm_send(input)
+
+        textview = self.glade.get_object("communication_output_textview")
+        textbuffer = textview.get_buffer()
+
+        self.line_num += 1
+
+        textbuffer.insert(textbuffer.get_end_iter(), '%d: < %s\r\n' % (self.line_num, input))
+        textview.scroll_to_mark(textbuffer.get_insert(), 0);
+
+    def comm_cmd_entry_send(self, widget, entry):
         input = self.glade.get_object("communication_cmd_entry").get_text()
 
-        self.com.send(input)
+        self.comm_send(input)
 
         textview = self.glade.get_object("communication_output_textview")
         textbuffer = textview.get_buffer()
@@ -185,10 +206,37 @@ class Hldi:
         print 'cmd substring: %s' % self.cmd_entry_substring
 
     def communication_cmd_enter_callback(self, widget, entry):
-        self.comm_cmd_send(widget, entry)
+        self.comm_cmd_entry_send(widget, entry)
 
     def communication_send_click_callback(self, widget, data = None):
-        self.comm_cmd_send(widget, data)
+        self.comm_cmd_entry_send(widget, entry)
+
+    def set_speed_btn_on_click(self, widget, data = None):
+        # @todo implement scale.
+        pwm = 125
+        self.comm_cmd_send(cmd.MOTOR_SET_PWM % pwm)
+        # @todo implement true speed once servo & quadrature encoder are done.
+        self.glade.get_object('speed_label').set_text('Speed: %d pwm' % pwm)
+
+    def motor_dir_btn_on_click(self, widget, data = None):
+        btn = self.glade.get_object('motor_dir_btn')
+
+        if btn.get_label() == 'CW':
+            btn.set_label('CCW')
+            self.comm_cmd_send(cmd.MOTOR_CW)
+        else:
+            btn.set_label('CW')
+            self.comm_cmd_send(cmd.MOTOR_CCW)
+
+    def motor_on_btn_on_click(self, widget, data = None):
+        btn = self.glade.get_object('motor_on_btn')
+
+        if btn.get_label() == 'Motor ON':
+            btn.set_label('Motor OFF')
+            self.comm_cmd_send(cmd.MOTOR_ON)
+        else:
+            btn.set_label('Motor ON')
+            self.comm_cmd_send(cmd.MOTOR_OFF)
 
     def frame_expander_eventbox_click_callback(self, widget, data = None, prefix = ''):
         frame_state = '%s_frame_state' % prefix
@@ -254,6 +302,10 @@ class Hldi:
         self.glade.get_object('communication_cmd_entry').connect('activate', self.communication_cmd_enter_callback, None)
         self.glade.get_object('communication_cmd_entry').connect('key-release-event', self.com_cmd_on_key_release)
         self.glade.get_object('communication_cmd_entry').connect('key-press-event', self.com_cmd_on_key_press)
+
+        self.glade.get_object('motor_on_btn').connect('clicked', self.motor_on_btn_on_click, None)
+        self.glade.get_object('motor_dir_btn').connect('clicked', self.motor_dir_btn_on_click, None)
+        self.glade.get_object('set_speed_btn').connect('clicked', self.set_speed_btn_on_click, None)
 
         # configure the serial connections (the parameters differs on the device you are connecting to)
         self.glade.get_object('serial_device_entry').set_text('/dev/ttyUSB0')
