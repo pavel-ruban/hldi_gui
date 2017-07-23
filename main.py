@@ -19,12 +19,12 @@ import gobject
 from hldi.communication.uart import Uart
 from hldi.profile import Profile
 from hldi import graphic
-
-import glib
-
 hldi = None
 
 class Hldi:
+    cmd_history = []
+    cmd_entry_substring = ''
+    cmd_history_filename = 'cmd_history.txt'
     # Communication layer.
     com = None
     # Profile is used to manage application settings.
@@ -43,6 +43,15 @@ class Hldi:
         self.com = Uart()
         self.profile = Profile()
 
+        # Load cmd history.
+        try:
+            with open(self.cmd_history_filename, 'r') as f:
+                self.cmd_history = [line.rstrip('\n') for line in f]
+        except:
+            pass
+
+        print self.cmd_history
+
     def main(self):
         # All PyGTK applications must have a gtk.main(). Control ends here
         # and waits for an event to occur (like a key press or mouse event).
@@ -56,6 +65,11 @@ class Hldi:
         # type dialogs.
         print "delete event occurred"
 
+        # Update history file.
+        with open(self.cmd_history_filename, 'w') as f:
+            for s in self.cmd_history:
+                f.write(s + '\n')
+
         # Change FALSE to TRUE and the main window will not be destroyed
         # with a "delete_event".
         return False
@@ -64,10 +78,83 @@ class Hldi:
         print "destroy signal occurred"
         gtk.main_quit()
 
-    def communication_cmd_enter_callback(self, widget, entry):
-        # communication_cmd_entry = self.glade.get_object("communication_cmd_entry").get_text()
+    def com_cmd_on_key_release(self, widget, ev, data=None):
+        name = gtk.gdk.keyval_name(ev.keyval)
+
+        if name != 'Up' and name != 'Down' and name != 'Return':
+            self.cmd_entry_substring = self.glade.get_object("communication_cmd_entry").get_text()
+            print 'cmd substring: %s' % self.cmd_entry_substring
+
+        return True
+
+    # Search entry in cmd history if entry is not empty or list all previously typed commands.
+    def com_cmd_on_key_press(self, widget, ev, data=None):
+        input = self.glade.get_object("communication_cmd_entry")
+
+        name = gtk.gdk.keyval_name(ev.keyval)
+
+        if name != 'Up' and name != 'Down':
+            return
+
+        if not hasattr(self, 'cmd_hist_index'):
+            self.cmd_hist_index = -1
+
+        cmd_hist_len = len(self.cmd_history)
+
+        # If cmd entry is not empty search by substring.
+        if self.cmd_entry_substring != '':
+            origin_index = self.cmd_hist_index
+
+            if name == 'Up':
+                self.cmd_hist_index = self.cmd_hist_index - 1
+
+                # Loop through all elements from.
+                while origin_index != self.cmd_hist_index:
+                    if cmd_hist_len < abs(self.cmd_hist_index):
+                        self.cmd_hist_index = -1
+
+                    if re.search(re.escape(self.cmd_entry_substring), self.cmd_history[self.cmd_hist_index]):
+                        input.set_text(self.cmd_history[self.cmd_hist_index])
+                        return  True
+
+                    self.cmd_hist_index = self.cmd_hist_index - 1
+
+            elif name == 'Down':
+                self.cmd_hist_index = self.cmd_hist_index + 1
+
+                # Loop through all elements from.
+                while origin_index != self.cmd_hist_index:
+                    if cmd_hist_len - 1 < abs(self.cmd_hist_index):
+                        self.cmd_hist_index = 0
+
+                    if re.search(re.escape(self.cmd_entry_substring), self.cmd_history[self.cmd_hist_index]):
+                        input.set_text(self.cmd_history[self.cmd_hist_index])
+                        return True
+
+                    self.cmd_hist_index = self.cmd_hist_index + 1
+
+        # Otherwise just use prev / next cmd.
+        else:
+            if name == 'Up':
+                self.cmd_hist_index = self.cmd_hist_index - 1
+                if cmd_hist_len < abs(self.cmd_hist_index):
+                    self.cmd_hist_index = -1
+
+                input.set_text(self.cmd_history[self.cmd_hist_index])
+                self.cmd_entry_substring = ''
+            elif name == 'Down':
+                self.cmd_hist_index = self.cmd_hist_index + 1
+
+                if cmd_hist_len - 1 < abs(self.cmd_hist_index):
+                    self.cmd_hist_index = 0
+
+                input.set_text(self.cmd_history[self.cmd_hist_index])
+                self.cmd_entry_substring = ''
+
+        return True
+
+    def comm_cmd_send(self, widget, entry):
         input = self.glade.get_object("communication_cmd_entry").get_text()
-        # input = entry.get_text()
 
         self.com.send(input)
 
@@ -77,21 +164,31 @@ class Hldi:
         self.line_num += 1
 
         textbuffer.insert(textbuffer.get_end_iter(), '%d: < %s\r\n' % (self.line_num, input))
-
         textview.scroll_to_mark(textbuffer.get_insert(), 0);
 
+        print '\nbefore\n'
+        print self.cmd_history
+        # Make list unique.
+        if input in self.cmd_history:
+            self.cmd_history.remove(input)
+
+        # Make repeated value most recent in cmd history.
+        self.cmd_history.append(input)
+
+        self.cmd_hist_index = -1
+
+        print '\nbefore\n'
+        print self.cmd_history
+
+        # Avoid further searching if we already entered new string.
+        self.cmd_entry_substring = ''
+        print 'cmd substring: %s' % self.cmd_entry_substring
+
+    def communication_cmd_enter_callback(self, widget, entry):
+        self.comm_cmd_send(widget, entry)
+
     def communication_send_click_callback(self, widget, data = None):
-        input = self.glade.get_object("communication_cmd_entry").get_text()
-        self.com.send(input)
-
-        textview = self.glade.get_object("communication_output_textview")
-        textbuffer = textview.get_buffer()
-
-        self.line_num += 1
-
-        textbuffer.insert(textbuffer.get_end_iter(), '%d: < %s\r\n' % (self.line_num, input))
-
-        textview.scroll_to_mark(textbuffer.get_insert(), 0)
+        self.comm_cmd_send(widget, data)
 
     def frame_expander_eventbox_click_callback(self, widget, data = None, prefix = ''):
         frame_state = '%s_frame_state' % prefix
@@ -155,7 +252,8 @@ class Hldi:
         self.glade.get_object('connection_eventbox').connect('button-press-event', self.frame_expander_eventbox_click_callback, 'connection')
         self.glade.get_object('movectrl_eventbox').connect('button-press-event', self.frame_expander_eventbox_click_callback, 'movectrl')
         self.glade.get_object('communication_cmd_entry').connect('activate', self.communication_cmd_enter_callback, None)
-        self.glade.get_object('serial_connect_button').connect('clicked', self.communication_connect_click_callback, None)
+        self.glade.get_object('communication_cmd_entry').connect('key-release-event', self.com_cmd_on_key_release)
+        self.glade.get_object('communication_cmd_entry').connect('key-press-event', self.com_cmd_on_key_press)
 
         # configure the serial connections (the parameters differs on the device you are connecting to)
         self.glade.get_object('serial_device_entry').set_text('/dev/ttyUSB0')

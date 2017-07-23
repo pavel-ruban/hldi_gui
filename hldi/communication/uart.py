@@ -10,8 +10,8 @@ class Uart(base.Abstract):
     def __init__(self):
         pass
 
-    def connect(self, glade, parity=serial.PARITY_ODD, stopbits=serial.STOPBITS_TWO,
-        bytesize=serial.SEVENBITS):
+    def connect(self, glade, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,
+        bytesize=serial.EIGHTBITS):
 
         device = glade.get_object('serial_device_entry').get_text()
         baudrate = glade.get_object('serial_baudrate_entry').get_text() if not '' else 115200
@@ -34,7 +34,8 @@ class Uart(base.Abstract):
 
     def send(self, input):
         if self.isOpen():
-            self.ser.write(input + '\x00')
+            for c in input + '\x00':
+                self.ser.write(c)
 
     def listen(self, conn, queue):
         while self.isOpen():

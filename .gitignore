@@ -3,3 +3,4 @@ hardware
 *.swn
 .idea
 *.pyc
+cmd_history.txt
