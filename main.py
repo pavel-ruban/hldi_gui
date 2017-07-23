@@ -14,6 +14,7 @@ import gtk.glade
 
 import time
 import re
+import ast
 import gobject
 
 from hldi.communication.uart import Uart
@@ -22,6 +23,7 @@ from hldi import graphic
 hldi = None
 
 from hldi import commands as cmd
+import pickle
 
 class Hldi:
     cmd_history = []
@@ -43,7 +45,6 @@ class Hldi:
 
     def bootstrap(self):
         self.com = Uart()
-        self.profile = Profile()
 
         # Load cmd history.
         try:
@@ -51,6 +52,11 @@ class Hldi:
                 self.cmd_history = [line.rstrip('\n') for line in f]
         except:
             pass
+
+        try:
+            self.profile = pickle.load(open('profiles.txt', 'r'))
+        except:
+            self.profile = Profile()
 
         print self.cmd_history
 
@@ -71,6 +77,11 @@ class Hldi:
         with open(self.cmd_history_filename, 'w') as f:
             for s in self.cmd_history:
                 f.write(s + '\n')
+
+        self.profile.device = self.glade.get_object('serial_device_entry').get_text()
+        self.profile.baudrate = self.glade.get_object('serial_baudrate_entry').get_text()
+
+        pickle.dump(self.profile, open('profiles.txt', 'w'))
 
         # Change FALSE to TRUE and the main window will not be destroyed
         # with a "delete_event".
@@ -209,34 +220,56 @@ class Hldi:
         self.comm_cmd_entry_send(widget, entry)
 
     def communication_send_click_callback(self, widget, data = None):
-        self.comm_cmd_entry_send(widget, entry)
+        self.comm_cmd_entry_send(widget, data)
 
     def set_speed_btn_on_click(self, widget, data = None):
-        # @todo implement scale.
-        pwm = 125
+        if (not self.com.isOpen()):
+            self.log('Uart connection is not available', 'error')
+            return 
+
+        pwm = self.glade.get_object("speed_scale").get_value()
+
         self.comm_cmd_send(cmd.MOTOR_SET_PWM % pwm)
+
         # @todo implement true speed once servo & quadrature encoder are done.
         self.glade.get_object('speed_label').set_text('Speed: %d pwm' % pwm)
 
     def motor_dir_btn_on_click(self, widget, data = None):
+        if (not self.com.isOpen()):
+            self.log('Uart connection is not available', 'error')
+            return 
+        
         btn = self.glade.get_object('motor_dir_btn')
 
         if btn.get_label() == 'CW':
             btn.set_label('CCW')
-            self.comm_cmd_send(cmd.MOTOR_CW)
+            self.comm_cmd_send(cmd.MOTOR_CCW)
         else:
             btn.set_label('CW')
-            self.comm_cmd_send(cmd.MOTOR_CCW)
+            self.comm_cmd_send(cmd.MOTOR_CW)
 
+    def log(self, msg, type = 'status'):
+        # Update status bar message.
+        statusbar = self.glade.get_object('statusbar')
+        context_id = statusbar.get_context_id('last_event')
+        statusbar.push(context_id, '%s: %s' % (type, msg))
+        
     def motor_on_btn_on_click(self, widget, data = None):
+        if (not self.com.isOpen()):
+            self.log('Uart connection is not available', 'error')
+            return 
+        
         btn = self.glade.get_object('motor_on_btn')
+        spinner = self.glade.get_object('cmd_spinner')
 
         if btn.get_label() == 'Motor ON':
             btn.set_label('Motor OFF')
-            self.comm_cmd_send(cmd.MOTOR_ON)
+            self.comm_cmd_send(cmd.MOTOR_OFF)
+            spinner.stop()
         else:
             btn.set_label('Motor ON')
-            self.comm_cmd_send(cmd.MOTOR_OFF)
+            self.comm_cmd_send(cmd.MOTOR_ON)
+            spinner.start()
 
     def frame_expander_eventbox_click_callback(self, widget, data = None, prefix = ''):
         frame_state = '%s_frame_state' % prefix
@@ -302,15 +335,24 @@ class Hldi:
         self.glade.get_object('communication_cmd_entry').connect('activate', self.communication_cmd_enter_callback, None)
         self.glade.get_object('communication_cmd_entry').connect('key-release-event', self.com_cmd_on_key_release)
         self.glade.get_object('communication_cmd_entry').connect('key-press-event', self.com_cmd_on_key_press)
-
+        self.glade.get_object('serial_connect_button').connect('clicked', self.communication_connect_on_click,
+                                                               None)
         self.glade.get_object('motor_on_btn').connect('clicked', self.motor_on_btn_on_click, None)
         self.glade.get_object('motor_dir_btn').connect('clicked', self.motor_dir_btn_on_click, None)
         self.glade.get_object('set_speed_btn').connect('clicked', self.set_speed_btn_on_click, None)
 
         # configure the serial connections (the parameters differs on the device you are connecting to)
-        self.glade.get_object('serial_device_entry').set_text('/dev/ttyUSB0')
-        self.glade.get_object('serial_baudrate_entry').set_text('115200')
-        self.glade.get_object('profile_entry').set_text('photoresist')
+
+        try:
+            self.glade.get_object('serial_device_entry').set_text(self.profile.device)
+            self.glade.get_object('serial_baudrate_entry').set_text(self.profile.baudrate)
+            self.glade.get_object('profile_entry').set_text(self.profile.name)
+        except:
+            self.glade.get_object('serial_device_entry').set_text('/dev/ttyUSB0')
+            self.glade.get_object('serial_baudrate_entry').set_text('115200')
+            self.glade.get_object('profile_entry').set_text('photoresist')
+
+        self.glade.get_object("speed_scale").set_range(0, 255)
 
         # and the window
         window.show_all()
@@ -329,7 +371,7 @@ class Hldi:
 
         self.child_conn.close()
 
-    def communication_connect_click_callback(self, widget, entry):
+    def communication_connect_on_click(self, widget, entry):
 
         if self.com.isOpen():
             self.com.close()

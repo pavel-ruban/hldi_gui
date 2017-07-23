@@ -4,3 +4,4 @@ hardware
 .idea
 *.pyc
 cmd_history.txt
+profiles.txt
