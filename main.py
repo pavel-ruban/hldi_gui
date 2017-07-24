@@ -402,6 +402,11 @@ class Hldi:
         except EOFError:
             return False  # stop reading
 
+        # @todo delete encoder debug later.
+        if not re.match('^>>', i):
+            self.glade.get_object('state_label').set_label(i)
+            return True  # continue reading
+
         # Update text
         textview = self.glade.get_object("communication_output_textview")
 
