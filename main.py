@@ -24,6 +24,11 @@ hldi = None
 
 from hldi import commands as cmd
 import pickle
+from collections import deque
+
+from hldi import vars
+
+vars.init()
 
 class Hldi:
     cmd_history = []
@@ -403,8 +408,43 @@ class Hldi:
             return False  # stop reading
 
         # @todo delete encoder debug later.
-        if not re.match('^>>', i):
-            self.glade.get_object('state_label').set_label(i)
+        m = re.match(r'^>> setpos: (-?\d+(?:\.\d+)?)', i)
+        if m:
+            self.glade.get_object('setpos_label').set_label('sp %.2f' % float(m.group(1)))
+            vars.set_position.append(float(m.group(1)))
+            return True  # continue reading
+
+        m = re.match(r'^>> pos: (-?\d+(?:\.\d+)?)', i)
+        if m:
+            self.glade.get_object('state_label').set_label(m.group(1))
+            self.glade.get_object('pos_label').set_label('pos %.3f' % float(m.group(1)))
+
+            vars.position.append(float(m.group(1)))
+            last_set_pos = max(enumerate(vars.set_position))[1]
+            vars.set_position.append(last_set_pos)
+
+            return True  # continue reading
+
+        m = re.match(r'^>> PID CV: (-?\d+(?:\.\d+)?)', i)
+        if m:
+            self.glade.get_object('cv_label').set_label('cv %.3f' % float(m.group(1)))
+            return True  # continue reading
+
+        m = re.match(r'^>> pid i: (-?\d+(?:\.\d+)?)', i)
+        if m:
+            self.glade.get_object('integral_label').set_label('i %.3f'.encode('utf-8') % float(m.group(1)))
+            return True  # continue reading
+
+        m = re.match(r'^>> PID K([pdi]) was set to (-?\d+(?:\.\d+)?)', i)
+        if m:
+            set_pid_label = {
+                'p': lambda : self.glade.get_object('kp_label').set_label('kp %.4f' % float(m.group(2))),
+                'd': lambda : self.glade.get_object('kd_label').set_label('kd %.4f' % float(m.group(2))),
+                'i': lambda : self.glade.get_object('ki_label').set_label('ki %.4f' % float(m.group(2)))
+            }[m.group(1)]
+
+            set_pid_label()
+
             return True  # continue reading
 
         # Update text

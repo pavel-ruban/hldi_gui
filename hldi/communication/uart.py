@@ -51,9 +51,7 @@ class Uart(base.Abstract):
 
             if line != '':
                 match = re.match('encoder: (\d+)', line)
-                if match:
-                    conn.send(match.group(1))
-                else:
-                    print ">>" + line
 
-                    conn.send('>> %s' % (re.sub(r'^\r', r'', line)))
+                print ">> " + line
+
+                conn.send('>> %s' % (re.sub(r'^\r', r'', line)))

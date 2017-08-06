@@ -13,6 +13,8 @@ from OpenGL.GL import shaders
 import numpy as np
 import gobject
 import time
+from collections import deque
+import vars
 
 class TestContext(BaseContext):
     """Creates a simple vertex shader..."""
@@ -145,32 +147,50 @@ def on_draw (area, _):
 
     glPointSize(10.0)
 
-    pi_degree = 2 * np.pi / 360
-    global degree
-
-    degree = degree + 1
-    np.sin(degree * pi_degree)
-
-    # print 'degress: %d' % degree
-
-    if degree > 360:
-        degree = -360
-
     glEnable(GL_POINT_SMOOTH)
     glPointSize(8.0)
 
     try:
-        glBegin(GL_POINTS)
-        for i in range(-360, 360, 1):
-            xx = i / 360.
-            y = np.sin((degree + i) * pi_degree)
+        # print 'xxx'
+        # print vars.position
+        glLineWidth(2.5)
+        glBegin(GL_LINE_STRIP)
+
+        for i, val in enumerate(vars.position):
             glColor3f(0., 0., 0.)
 
-            glVertex(xx * 1.3, y / 2, 0.0)
-            glColor3f(0., 1., 0.)
-            glVertex(xx * 2, y / 2, 0.0)
-            glColor3f(1., 1., 0.)
-            glVertex(xx * 2.8, y / 2, 0.0)
+            x = float(i) / 360 - 1.
+
+            if x < -1.: x = -1.
+            elif x > 1.: x = 1.
+
+            y = float(val) / 10000 - 1. + 0.3
+
+            if y < -1.: y = -1.
+            elif y > 1.: y = 1.
+
+            # print 'x %f y %f index %i val %f' % (x, y, i, val)
+            glVertex(x, y, 0.0)
+
+        glEnd()
+
+        glBegin(GL_LINE_STRIP)
+
+        for i, val in enumerate(vars.set_position):
+            glColor3f(0., 0., 1.)
+
+            x = float(i) / 360 - 1.
+
+            if x < -1.: x = -1.
+            elif x > 1.: x = 1.
+
+            y = float(val) / 10000 - 1 + 0.3
+
+            if y < -1.: y = -1.
+            elif y > 1.: y = 1.
+
+            # print 'x %f y %f index %i val %f' % (x, y, i, val)
+            glVertex(x, y, 0.0)
         glEnd()
 
         drawable.swap_buffers ()
